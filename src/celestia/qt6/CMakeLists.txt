@@ -20,6 +20,7 @@ else()
 endif()
 
 add_executable(celestia-qt6 WIN32 ${QT_SOURCES} ${RES} ${RC_SRC})
+target_compile_options(celestia-qt6 PRIVATE -fexceptions)
 add_dependencies(celestia-qt6 celestia)
 target_link_libraries(celestia-qt6 Qt6::Widgets Qt6::OpenGLWidgets celestia)
 

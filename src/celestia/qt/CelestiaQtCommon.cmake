@@ -3,6 +3,8 @@ set(QT_NO_CREATE_VERSIONLESS_TARGETS ON)
 
 function(GetQtSources UseWayland)
   set(REL_QT_SOURCES
+    http_message.cpp
+    http_server.cpp
     qtappwin.cpp
     qtbookmark.cpp
     qtcelestialbrowser.cpp
@@ -27,6 +29,8 @@ function(GetQtSources UseWayland)
   )
 
   set(REL_QT_HEADERS
+    http_message.h
+    http_server.h
     qtappwin.h
     qtbookmark.h
     qtcelestialbrowser.h
@@ -47,6 +51,7 @@ function(GetQtSources UseWayland)
     qtsolarsystembrowser.h
     qttimetoolbar.h
     qttourguide.h
+    uri.h
     xbel.h
   )
 

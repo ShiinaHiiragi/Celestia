@@ -15,6 +15,9 @@
  *                                                                         *
  ***************************************************************************/
 
+#define SERVER_VERSION "0.1"
+
+#include <iostream>
 #include <optional>
 
 #include <QtGlobal>
@@ -37,6 +40,25 @@
 #include "qtappwin.h"
 #include "qtcommandline.h"
 #include "qtgettext.h"
+
+#include "http_message.h"
+#include "http_server.h"
+
+using simple_http_server::HttpMethod;
+using simple_http_server::HttpRequest;
+using simple_http_server::HttpResponse;
+using simple_http_server::HttpServer;
+using simple_http_server::HttpStatusCode;
+
+HttpResponse status_version(const HttpRequest &_) {
+    assert(global_app != nullptr);
+    std::cout << "GET /version" << "\n";
+
+    HttpResponse response(HttpStatusCode::Ok);
+    response.SetHeader("Content-Type", "application/json");
+    response.SetContent(SERVER_VERSION);
+    return response;
+}
 
 #ifdef ENABLE_NLS
 namespace
@@ -142,6 +164,20 @@ int main(int argc, char *argv[])
 
     // Set the main window to be the cel url handler
     QDesktopServices::setUrlHandler("cel", &window, "handleCelUrl");
+
+    int port = 8000;
+    if (argc > 1) {
+        port = std::stoi(argv[1]);
+    }
+
+    std::string host = "0.0.0.0";
+    HttpServer server(host, port);
+
+    server.RegisterHttpRequestHandler("/version", HttpMethod::HEAD, status_version);
+    server.RegisterHttpRequestHandler("/version", HttpMethod::GET, status_version);
+
+    server.Start();
+    std::cout << "Server listening on " << host << ":" << port << std::endl;
 
     int ret = app.exec();
     QDesktopServices::unsetUrlHandler("cel");
