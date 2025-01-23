@@ -41,9 +41,11 @@
 #include "qtcommandline.h"
 #include "qtgettext.h"
 
+#include "json.h"
 #include "http_message.h"
 #include "http_server.h"
 
+using json = nlohmann::json;
 using simple_http_server::HttpMethod;
 using simple_http_server::HttpRequest;
 using simple_http_server::HttpResponse;
@@ -51,13 +53,30 @@ using simple_http_server::HttpServer;
 using simple_http_server::HttpStatusCode;
 
 HttpResponse status_version(const HttpRequest &_) {
-    assert(global_app != nullptr);
     std::cout << "GET /version" << "\n";
 
     HttpResponse response(HttpStatusCode::Ok);
     response.SetHeader("Content-Type", "application/json");
     response.SetContent(SERVER_VERSION);
     return response;
+}
+
+HttpResponse status_dump(const HttpRequest &request) {
+    std::string query = request.content();
+    std::cout << "POST /dump with " << query << "\n";
+
+    json result = "{}"_json;
+    result["echo"] = query;
+
+    try {
+        HttpResponse response(HttpStatusCode::Ok);
+        response.SetHeader("Content-Type", "application/json");
+        response.SetContent(result.dump());
+        return response;
+    } catch (...) {
+        HttpResponse response(HttpStatusCode::BadRequest);
+        return response;
+    }
 }
 
 #ifdef ENABLE_NLS
@@ -175,6 +194,9 @@ int main(int argc, char *argv[])
 
     server.RegisterHttpRequestHandler("/version", HttpMethod::HEAD, status_version);
     server.RegisterHttpRequestHandler("/version", HttpMethod::GET, status_version);
+
+    server.RegisterHttpRequestHandler("/dump", HttpMethod::HEAD, status_dump);
+    server.RegisterHttpRequestHandler("/dump", HttpMethod::POST, status_dump);
 
     server.Start();
     std::cout << "Server listening on " << host << ":" << port << std::endl;
