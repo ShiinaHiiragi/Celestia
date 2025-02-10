@@ -52,6 +52,8 @@ using simple_http_server::HttpResponse;
 using simple_http_server::HttpServer;
 using simple_http_server::HttpStatusCode;
 
+CelestiaCore const *appCore;
+
 HttpResponse status_version(const HttpRequest &_) {
     std::cout << "GET /version" << "\n";
 
@@ -63,10 +65,10 @@ HttpResponse status_version(const HttpRequest &_) {
 
 HttpResponse status_dump(const HttpRequest &request) {
     std::string query = request.content();
-    std::cout << "POST /dump with " << query << "\n";
+    std::cout << "GET /dump with " << query << "\n";
 
     json result = "{}"_json;
-    result["echo"] = query;
+    result["simTime"] = appCore->getSimulation()->getTime();
 
     try {
         HttpResponse response(HttpStatusCode::Ok);
@@ -196,8 +198,9 @@ int main(int argc, char *argv[])
     server.RegisterHttpRequestHandler("/version", HttpMethod::GET, status_version);
 
     server.RegisterHttpRequestHandler("/dump", HttpMethod::HEAD, status_dump);
-    server.RegisterHttpRequestHandler("/dump", HttpMethod::POST, status_dump);
+    server.RegisterHttpRequestHandler("/dump", HttpMethod::GET, status_dump);
 
+    appCore = window.getAppCore();
     server.Start();
     std::cout << "Server listening on " << host << ":" << port << std::endl;
 

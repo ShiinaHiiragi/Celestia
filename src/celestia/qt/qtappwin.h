@@ -53,6 +53,7 @@ class CelestiaAppWindow : public QMainWindow, public CelestiaCore::ContextMenuHa
 public:
     CelestiaAppWindow(QWidget* parent = nullptr);
     ~CelestiaAppWindow();
+    CelestiaCore* getAppCore() const;
 
     void init(const CelestiaCommandLineOptions&);
     void startAppCore();

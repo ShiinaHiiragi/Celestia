@@ -244,6 +244,11 @@ CelestiaAppWindow::~CelestiaAppWindow()
     delete(alerter);
 }
 
+CelestiaCore* CelestiaAppWindow::getAppCore() const
+{
+    return m_appCore;
+}
+
 void
 CelestiaAppWindow::init(const CelestiaCommandLineOptions& options)
 {
