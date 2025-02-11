@@ -3,3 +3,4 @@ Version: 0.1
 Maintainer: Ichinoe
 Architecture: amd64
 Description: Modified Celestia which supports a local server.
+Depends: libluajit-5.1-2

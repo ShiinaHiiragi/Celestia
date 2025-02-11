@@ -21,20 +21,20 @@
 
 ## Packaging
 
-1. Create a package and copy meta info:
+1. Create a package and copy files:
 
     ```shell
     mkdir -p /tmp/celestia-kai/DEBIAN
     cp src/celestia/qt/control /tmp/celestia-kai/DEBIAN/control
-    
-    ```
-
-2. Copy source files:
-
-    ```shell
     mkdir /tmp/celestia-kai/app
     cp -r /app/bin /tmp/celestia-kai/app
     cp -r /app/lib /tmp/celestia-kai/app
     cp -r /app/share /tmp/celestia-kai/app
     cd /tmp; dpkg-deb --build celestia-kai; cd -
+    ```
+
+2. Use `apt` INSTEAD OF `dpkg -i` to install package:
+
+    ```shell
+    sudo apt install /tmp/celestia-kai.deb
     ```
