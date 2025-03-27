@@ -125,6 +125,8 @@ public:
     void setFrame(ObserverFrame::CoordinateSystem, const Selection& refObject);
     const ObserverFrame::SharedConstPtr& getFrame() const;
 
+    std::string getStatus();
+
 private:
     double realTime{ 0.0 };
     double timeScale{ 1.0 };

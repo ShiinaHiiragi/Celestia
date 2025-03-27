@@ -37,15 +37,15 @@
 
 #include <celutil/gettext.h>
 #include <celutil/localeutil.h>
+#include <celmath/frustum.h>
 #include "qtappwin.h"
 #include "qtcommandline.h"
 #include "qtgettext.h"
 
-#include "json.h"
 #include "http_message.h"
 #include "http_server.h"
 
-using json = nlohmann::json;
+
 using simple_http_server::HttpMethod;
 using simple_http_server::HttpRequest;
 using simple_http_server::HttpResponse;
@@ -67,13 +67,10 @@ HttpResponse status_dump(const HttpRequest &request) {
     std::string query = request.content();
     std::cout << "GET /dump with " << query << "\n";
 
-    json result = "{}"_json;
-    result["simTime"] = appCore->getSimulation()->getTime();
-
     try {
         HttpResponse response(HttpStatusCode::Ok);
         response.SetHeader("Content-Type", "application/json");
-        response.SetContent(result.dump());
+        response.SetContent(appCore->getSimulation()->getStatus());
         return response;
     } catch (...) {
         HttpResponse response(HttpStatusCode::BadRequest);

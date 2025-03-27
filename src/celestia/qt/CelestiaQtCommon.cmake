@@ -31,7 +31,6 @@ function(GetQtSources UseWayland)
   set(REL_QT_HEADERS
     http_message.h
     http_server.h
-    json.h
     qtappwin.h
     qtbookmark.h
     qtcelestialbrowser.h
