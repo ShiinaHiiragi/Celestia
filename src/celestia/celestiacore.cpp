@@ -489,7 +489,6 @@ void CelestiaCore::mouseButtonUp(float x, float y, int button)
         else if (button == RightButton)
         {
             Eigen::Vector3f pickRay = getPickRay(x, y, viewManager->activeView());
-
             Selection sel = sim->pickObject(pickRay, renderer->getRenderFlags(), obsPickTolerance);
             if (!sel.empty())
             {
@@ -3370,16 +3369,48 @@ void CelestiaCore::loadAsterismsFile(const fs::path &path)
 std::string CelestiaCore::getStatus()
 {
     json result = "{}"_json;
-    result["simTime"] = sim->getTime();
 
     const Observer& observer = sim->getObserver();
     result["observer"] = "{}"_json;
     result["observer"]["position"] = "[]"_json;
-    result["observer"]["position"][0] = double(sim->getObserver().getPosition().x);
-    result["observer"]["position"][1] = double(sim->getObserver().getPosition().y);
-    result["observer"]["position"][2] = double(sim->getObserver().getPosition().z);
+    result["observer"]["position"][0] = double(observer.getPosition().x);
+    result["observer"]["position"][1] = double(observer.getPosition().y);
+    result["observer"]["position"][2] = double(observer.getPosition().z);
+    result["observer"]["simTime"] = observer.getTime();
 
-    // AstroCatalog::IndexNumber sol_index = sim->getUniverse()->getStarCatalog()->getNameDatabase()->findCatalogNumberByName("Sol", false);
-    // Star* sol = sim->getUniverse()->getStarCatalog()->find(sol_index);
+    const StarNameDatabase * starDB = universe->getStarCatalog()->getNameDatabase();
+    AstroCatalog::IndexNumber solIndex = starDB->findCatalogNumberByName("Sol", false);
+    Star* sol = universe->getStarCatalog()->find(solIndex);
+    Body *earth = universe->getSolarSystem(sol)->getPlanets()->find("Earth");
+
+    // std::cout << earth->getName() << "\n";
+    // std::cout << (earth->getClassification() == BodyClassification::Planet) << "\n";
+    // double tdb = sim->getTime();
+    // std::cout << double(earth->getPosition(tdb).x)
+
+    Eigen::Vector3f vec = earth->getPosition(sim->getTime()).offsetFromKm(observer.getPosition()).cast<float>();
+    float obsPickTolerance = sim->getActiveObserver()->getFOV() / static_cast<float>(metrics.height) * this->pickTolerance;
+    vec = sim->getActiveObserver()->getOrientationf() * vec;
+    std::cout << "vec: " << vec.normalized()(0) << ", " << vec.normalized()(1) << ", " << vec.normalized()(2) << "\n";
+    Selection sel = sim->pickObject(vec.normalized(), renderer->getRenderFlags(), obsPickTolerance);
+
+    switch (sel.getType()) {
+    case SelectionType::None:
+        std::cout << "None" << "\n";
+        break;
+    case SelectionType::Star:
+        std::cout << "Star" << "\n";
+        break;
+    case SelectionType::Body:
+        std::cout << "Body" << ": ";
+        std::cout << (earth == sel.body()) << "\n";
+        break;
+    case SelectionType::DeepSky:
+        std::cout << "DeepSky" << "\n";
+        break;
+    case SelectionType::Location:
+        std::cout << "Location" << "\n";
+        break;
+    }
     return result.dump();
 }
