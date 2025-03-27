@@ -3366,6 +3366,10 @@ void CelestiaCore::loadAsterismsFile(const fs::path &path)
     }
 }
 
+void printVector3f(std::string name, Eigen::Vector3f vec) {
+    std::cout << name << ": (" << vec(0) << ", " << vec(1) << ", " << vec(2) << ")\n";
+}
+
 std::string CelestiaCore::getStatus()
 {
     json result = "{}"_json;
@@ -3388,11 +3392,33 @@ std::string CelestiaCore::getStatus()
     // double tdb = sim->getTime();
     // std::cout << double(earth->getPosition(tdb).x)
 
+    int x_max = metrics.width, y_max = metrics.height;
+    float obsPickTolerance = sim->getActiveObserver()->getFOV() / static_cast<float>(y_max) * this->pickTolerance;
     Eigen::Vector3f vec = earth->getPosition(sim->getTime()).offsetFromKm(observer.getPosition()).cast<float>();
-    float obsPickTolerance = sim->getActiveObserver()->getFOV() / static_cast<float>(metrics.height) * this->pickTolerance;
-    vec = sim->getActiveObserver()->getOrientationf() * vec;
-    std::cout << "vec: " << vec.normalized()(0) << ", " << vec.normalized()(1) << ", " << vec.normalized()(2) << "\n";
-    Selection sel = sim->pickObject(vec.normalized(), renderer->getRenderFlags(), obsPickTolerance);
+    vec = (sim->getActiveObserver()->getOrientationf() * vec).normalized();
+    printVector3f("vec", vec);
+    Selection sel = sim->pickObject(vec, renderer->getRenderFlags(), obsPickTolerance);
+
+    printVector3f("pick(0, 0)", getPickRay(0, 0, viewManager->activeView()));
+    printVector3f("pick(0, Y)", getPickRay(0, y_max - 1, viewManager->activeView()));
+    printVector3f("pick(X, 0)", getPickRay(x_max - 1, 0, viewManager->activeView()));
+    printVector3f("pick(X, Y)", getPickRay(x_max - 1, y_max - 1, viewManager->activeView()));
+
+    bool in = false;
+    float lastTop = 0.0f, lastBot = 0.0f;
+    for (int x = 0; x < x_max; x += 1) {
+        Vector3f pickRayTop = getPickRay(x, 0, viewManager->activeView());
+        Vector3f pickRayBot = getPickRay(x, y_max - 1, viewManager->activeView());
+        if (x > 0) {
+            std::cout << lastTop << " <= " << vec(0) << " && " << vec(0) << " <= " << pickRayTop(0) << "\n";
+        }
+        if (x > 0 && lastTop <= vec(0) && vec(0) < pickRayTop(0) && vec(1) <= pickRayTop(1) && vec(1) >= pickRayBot(1)) {
+            in = true;
+            break;
+        }
+        lastTop = pickRayTop(0), lastBot = pickRayBot(0);
+    }
+    std::cout << in << "\n";
 
     switch (sel.getType()) {
     case SelectionType::None:
