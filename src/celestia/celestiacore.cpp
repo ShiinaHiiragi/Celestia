@@ -78,6 +78,10 @@
 #include <celutil/gettext.h>
 #include <celutil/utf8.h>
 
+#include "json.h"
+
+using json = nlohmann::json;
+
 #ifdef USE_MINIAUDIO
 #include "miniaudiosession.h"
 #endif
@@ -3361,4 +3365,21 @@ void CelestiaCore::loadAsterismsFile(const fs::path &path)
         std::unique_ptr<AsterismList> asterisms = ReadAsterismList(asterismsFile, *universe->getStarCatalog());
         universe->setAsterisms(std::move(asterisms));
     }
+}
+
+std::string CelestiaCore::getStatus()
+{
+    json result = "{}"_json;
+    result["simTime"] = sim->getTime();
+
+    const Observer& observer = sim->getObserver();
+    result["observer"] = "{}"_json;
+    result["observer"]["position"] = "[]"_json;
+    result["observer"]["position"][0] = double(sim->getObserver().getPosition().x);
+    result["observer"]["position"][1] = double(sim->getObserver().getPosition().y);
+    result["observer"]["position"][2] = double(sim->getObserver().getPosition().z);
+
+    // AstroCatalog::IndexNumber sol_index = sim->getUniverse()->getStarCatalog()->getNameDatabase()->findCatalogNumberByName("Sol", false);
+    // Star* sol = sim->getUniverse()->getStarCatalog()->find(sol_index);
+    return result.dump();
 }

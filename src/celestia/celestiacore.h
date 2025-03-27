@@ -380,6 +380,7 @@ public:
     bool saveScreenShot(const fs::path&, ContentType = ContentType::Unknown) const;
 
     void loadAsterismsFile(const fs::path &path);
+    std::string getStatus();
 
 #ifdef USE_MINIAUDIO
     bool isPlayingAudio(int channel) const;

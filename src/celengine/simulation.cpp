@@ -19,9 +19,6 @@
 #include "body.h"
 #include "location.h"
 #include "render.h"
-#include "json.h"
-
-using json = nlohmann::json;
 
 Simulation::Simulation(Universe* _universe) :
     universe(_universe)
@@ -544,10 +541,4 @@ SolarSystem* Simulation::getNearestSolarSystem() const
     if (!closestSolarSystem.has_value())
         closestSolarSystem = universe->getNearestSolarSystem(activeObserver->getPosition());
     return *closestSolarSystem;
-}
-
-std::string Simulation::getStatus()
-{
-    json result = "{}"_json;
-    return result.dump();
 }

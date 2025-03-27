@@ -16,6 +16,7 @@ set(CELESTIA_SOURCES
   helper.h
   hud.cpp
   hud.h
+  json.h
   loaddso.cpp
   loaddso.h
   loadsso.cpp

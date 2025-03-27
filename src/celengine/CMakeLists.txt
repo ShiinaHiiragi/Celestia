@@ -51,7 +51,6 @@ set(CELENGINE_SOURCES
   glsupport.h
   hash.cpp
   hash.h
-  json.h
   lightenv.h
   location.cpp
   location.h

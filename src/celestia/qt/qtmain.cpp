@@ -52,7 +52,7 @@ using simple_http_server::HttpResponse;
 using simple_http_server::HttpServer;
 using simple_http_server::HttpStatusCode;
 
-CelestiaCore const *appCore;
+CelestiaCore *appCore;
 
 HttpResponse status_version(const HttpRequest &_) {
     std::cout << "GET /version" << "\n";
@@ -70,7 +70,7 @@ HttpResponse status_dump(const HttpRequest &request) {
     try {
         HttpResponse response(HttpStatusCode::Ok);
         response.SetHeader("Content-Type", "application/json");
-        response.SetContent(appCore->getSimulation()->getStatus());
+        response.SetContent(appCore->getStatus());
         return response;
     } catch (...) {
         HttpResponse response(HttpStatusCode::BadRequest);
