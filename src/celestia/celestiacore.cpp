@@ -14,6 +14,8 @@
 // of the License, or (at your option) any later version.
 
 #include "celestiacore.h"
+#include "celengine/selection.h"
+#include "celengine/univcoord.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -3370,6 +3372,100 @@ void printVector3f(std::string name, Eigen::Vector3f vec) {
     std::cout << name << ": (" << vec(0) << ", " << vec(1) << ", " << vec(2) << ")\n";
 }
 
+bool CelestiaCore::visible(std::string name, SelectionType type)
+{
+    Star* star;
+    Body* body;
+    DeepSkyObject* dso;
+    UniversalCoord coord;
+    const Observer& observer = sim->getObserver();
+
+    switch (type) {
+    case SelectionType::Star: {
+        const StarNameDatabase* starDB = universe->getStarCatalog()->getNameDatabase();
+        AstroCatalog::IndexNumber solIndex = starDB->findCatalogNumberByName(name, false);
+        star = universe->getStarCatalog()->find(solIndex);
+        if (star == nullptr) {
+            return false;
+        }
+        coord = UniversalCoord(star->getPosition().cast<double>());
+        break;
+    }
+
+    case SelectionType::Body: {
+        const StarNameDatabase * starDB = universe->getStarCatalog()->getNameDatabase();
+        AstroCatalog::IndexNumber solIndex = starDB->findCatalogNumberByName("Sol", false);
+        Star* sol = universe->getStarCatalog()->find(solIndex);
+        body = universe->getSolarSystem(sol)->getPlanets()->find(name);
+        if (body == nullptr) {
+            return false;
+        }
+        coord = body->getPosition(sim->getTime());
+        break;
+    }
+
+    case SelectionType::DeepSky: {
+        dso = universe->getDSOCatalog()->find(name, false);
+        if (dso == nullptr) {
+            return false;
+        }
+        coord = UniversalCoord(dso->getPosition());
+        break;
+    }
+
+    default: {
+        return false;
+    }
+    }
+
+    Eigen::Vector3f object = coord.offsetFromKm(observer.getPosition()).cast<float>();
+    Eigen::Vector3f subject = (sim->getActiveObserver()->getOrientationf() * object).normalized();
+
+    bool inSelect = false;
+    int x_max = metrics.width, y_max = metrics.height;
+    float obsPickTolerance = sim->getActiveObserver()->getFOV() / static_cast<float>(y_max) * this->pickTolerance;
+    Selection sel = sim->pickObject(subject, renderer->getRenderFlags(), obsPickTolerance);
+
+    switch (type) {
+    case SelectionType::Star: {
+        inSelect = (sel.star() == star);
+        break;
+    }
+
+    case SelectionType::Body: {
+        inSelect = (sel.body() == body);
+        break;
+    }
+
+    case SelectionType::DeepSky: {
+        inSelect = (sel.deepsky() == dso);
+        break;
+    }
+
+    default: {
+        return false;
+    }
+    }
+
+    bool inScreen = false;
+    float lastTop = 0.0f, lastBot = 0.0f;
+    for (int x = 0; x < x_max; x += 1) {
+        Vector3f pickRayTop = getPickRay(x, 0, viewManager->activeView());
+        Vector3f pickRayBot = getPickRay(x, y_max - 1, viewManager->activeView());
+        if (x > 0 && lastTop <= subject(0)
+            && subject(0) < pickRayTop(0)
+            && subject(1) <= pickRayTop(1)
+            && subject(1) >= pickRayBot(1)
+        ) {
+            inScreen = true;
+            break;
+        }
+        lastTop = pickRayTop(0), lastBot = pickRayBot(0);
+    }
+
+    return inSelect && inScreen;
+}
+
 std::string CelestiaCore::getStatus()
 {
     json result = "{}"_json;
@@ -3382,61 +3478,7 @@ std::string CelestiaCore::getStatus()
     result["observer"]["position"][2] = double(observer.getPosition().z);
     result["observer"]["simTime"] = observer.getTime();
 
-    const StarNameDatabase * starDB = universe->getStarCatalog()->getNameDatabase();
-    AstroCatalog::IndexNumber solIndex = starDB->findCatalogNumberByName("Sol", false);
-    Star* sol = universe->getStarCatalog()->find(solIndex);
-    Body *earth = universe->getSolarSystem(sol)->getPlanets()->find("Earth");
-
-    // std::cout << earth->getName() << "\n";
-    // std::cout << (earth->getClassification() == BodyClassification::Planet) << "\n";
-    // double tdb = sim->getTime();
-    // std::cout << double(earth->getPosition(tdb).x)
-
-    int x_max = metrics.width, y_max = metrics.height;
-    float obsPickTolerance = sim->getActiveObserver()->getFOV() / static_cast<float>(y_max) * this->pickTolerance;
-    Eigen::Vector3f vec = earth->getPosition(sim->getTime()).offsetFromKm(observer.getPosition()).cast<float>();
-    vec = (sim->getActiveObserver()->getOrientationf() * vec).normalized();
-    printVector3f("vec", vec);
-    Selection sel = sim->pickObject(vec, renderer->getRenderFlags(), obsPickTolerance);
-
-    printVector3f("pick(0, 0)", getPickRay(0, 0, viewManager->activeView()));
-    printVector3f("pick(0, Y)", getPickRay(0, y_max - 1, viewManager->activeView()));
-    printVector3f("pick(X, 0)", getPickRay(x_max - 1, 0, viewManager->activeView()));
-    printVector3f("pick(X, Y)", getPickRay(x_max - 1, y_max - 1, viewManager->activeView()));
-
-    bool in = false;
-    float lastTop = 0.0f, lastBot = 0.0f;
-    for (int x = 0; x < x_max; x += 1) {
-        Vector3f pickRayTop = getPickRay(x, 0, viewManager->activeView());
-        Vector3f pickRayBot = getPickRay(x, y_max - 1, viewManager->activeView());
-        if (x > 0) {
-            std::cout << lastTop << " <= " << vec(0) << " && " << vec(0) << " <= " << pickRayTop(0) << "\n";
-        }
-        if (x > 0 && lastTop <= vec(0) && vec(0) < pickRayTop(0) && vec(1) <= pickRayTop(1) && vec(1) >= pickRayBot(1)) {
-            in = true;
-            break;
-        }
-        lastTop = pickRayTop(0), lastBot = pickRayBot(0);
-    }
-    std::cout << in << "\n";
-
-    switch (sel.getType()) {
-    case SelectionType::None:
-        std::cout << "None" << "\n";
-        break;
-    case SelectionType::Star:
-        std::cout << "Star" << "\n";
-        break;
-    case SelectionType::Body:
-        std::cout << "Body" << ": ";
-        std::cout << (earth == sel.body()) << "\n";
-        break;
-    case SelectionType::DeepSky:
-        std::cout << "DeepSky" << "\n";
-        break;
-    case SelectionType::Location:
-        std::cout << "Location" << "\n";
-        break;
-    }
+    result["sol"] = visible("Sol", SelectionType::Star);
+    result["earth"] = visible("Earth", SelectionType::Body);
     return result.dump();
 }
