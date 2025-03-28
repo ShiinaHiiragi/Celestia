@@ -3457,7 +3457,7 @@ bool CelestiaCore::visible(std::string name, SelectionType type)
             && subject(1) <= pickRayTop(1)
             && subject(1) >= pickRayBot(1)
         ) {
-            inScreen = true;
+            inScreen = subject(2) <= 0;
             break;
         }
         lastTop = pickRayTop(0), lastBot = pickRayBot(0);
@@ -3480,5 +3480,6 @@ std::string CelestiaCore::getStatus()
 
     result["sol"] = visible("Sol", SelectionType::Star);
     result["earth"] = visible("Earth", SelectionType::Body);
+    result["lmc"] = visible("LMC", SelectionType::DeepSky);
     return result.dump();
 }
