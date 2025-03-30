@@ -19,6 +19,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <cctype>
 #include <cwctype>
@@ -3468,18 +3469,89 @@ bool CelestiaCore::visible(std::string name, SelectionType type)
 
 std::string CelestiaCore::getStatus()
 {
-    json result = "{}"_json;
+    json dump = "{}"_json;
 
-    const Observer& observer = sim->getObserver();
-    result["observer"] = "{}"_json;
-    result["observer"]["position"] = "[]"_json;
-    result["observer"]["position"][0] = double(observer.getPosition().x);
-    result["observer"]["position"][1] = double(observer.getPosition().y);
-    result["observer"]["position"][2] = double(observer.getPosition().z);
-    result["observer"]["simTime"] = observer.getTime();
+    dump["time"] = "{}"_json;
+    dump["time"]["value"] = sim->getObserver().getTime();
+    dump["time"]["scale"] = sim->getTimeScale();
+    dump["time"]["pause"] = sim->getPauseState();
 
-    result["sol"] = visible("Sol", SelectionType::Star);
-    result["earth"] = visible("Earth", SelectionType::Body);
-    result["lmc"] = visible("LMC", SelectionType::DeepSky);
-    return result.dump();
+    dump["entity"] = "{}"_json;
+    dump["entity"]["sol"] = visible("Sol", SelectionType::Star);
+    dump["entity"]["earth"] = visible("Earth", SelectionType::Body);
+    dump["entity"]["lmc"] = visible("LMC", SelectionType::DeepSky);
+
+    dump["config"] = "{}"_json;
+    dump["config"]["render"] = "{}"_json;
+    dump["config"]["render"]["nothing"] = bool(renderer->getRenderFlags() & Renderer::ShowNothing);
+    dump["config"]["render"]["stars"] = bool(renderer->getRenderFlags() & Renderer::ShowStars);
+    dump["config"]["render"]["planets"] = bool(renderer->getRenderFlags() & Renderer::ShowPlanets);
+    dump["config"]["render"]["galaxies"] = bool(renderer->getRenderFlags() & Renderer::ShowGalaxies);
+    dump["config"]["render"]["diagrams"] = bool(renderer->getRenderFlags() & Renderer::ShowDiagrams);
+    dump["config"]["render"]["cloudMaps"] = bool(renderer->getRenderFlags() & Renderer::ShowCloudMaps);
+    dump["config"]["render"]["orbits"] = bool(renderer->getRenderFlags() & Renderer::ShowOrbits);
+    dump["config"]["render"]["celestialSphere"] = bool(renderer->getRenderFlags() & Renderer::ShowCelestialSphere);
+    dump["config"]["render"]["nightMaps"] = bool(renderer->getRenderFlags() & Renderer::ShowNightMaps);
+    dump["config"]["render"]["atmospheres"] = bool(renderer->getRenderFlags() & Renderer::ShowAtmospheres);
+    dump["config"]["render"]["smoothLines"] = bool(renderer->getRenderFlags() & Renderer::ShowSmoothLines);
+    dump["config"]["render"]["eclipseShadows"] = bool(renderer->getRenderFlags() & Renderer::ShowEclipseShadows);
+    dump["config"]["render"]["starsAsPoints"] = bool(renderer->getRenderFlags() & Renderer::ShowStarsAsPoints);
+    dump["config"]["render"]["ringShadows"] = bool(renderer->getRenderFlags() & Renderer::ShowRingShadows);
+    dump["config"]["render"]["boundaries"] = bool(renderer->getRenderFlags() & Renderer::ShowBoundaries);
+    dump["config"]["render"]["autoMag"] = bool(renderer->getRenderFlags() & Renderer::ShowAutoMag);
+    dump["config"]["render"]["cometTails"] = bool(renderer->getRenderFlags() & Renderer::ShowCometTails);
+    dump["config"]["render"]["markers"] = bool(renderer->getRenderFlags() & Renderer::ShowMarkers);
+    dump["config"]["render"]["partialTrajectories"] = bool(renderer->getRenderFlags() & Renderer::ShowPartialTrajectories);
+    dump["config"]["render"]["nebulae"] = bool(renderer->getRenderFlags() & Renderer::ShowNebulae);
+    dump["config"]["render"]["openClusters"] = bool(renderer->getRenderFlags() & Renderer::ShowOpenClusters);
+    dump["config"]["render"]["globulars"] = bool(renderer->getRenderFlags() & Renderer::ShowGlobulars);
+    dump["config"]["render"]["cloudShadows"] = bool(renderer->getRenderFlags() & Renderer::ShowCloudShadows);
+    dump["config"]["render"]["galacticGrid"] = bool(renderer->getRenderFlags() & Renderer::ShowGalacticGrid);
+    dump["config"]["render"]["eclipticGrid"] = bool(renderer->getRenderFlags() & Renderer::ShowEclipticGrid);
+    dump["config"]["render"]["horizonGrid"] = bool(renderer->getRenderFlags() & Renderer::ShowHorizonGrid);
+    dump["config"]["render"]["ecliptic"] = bool(renderer->getRenderFlags() & Renderer::ShowEcliptic);
+    dump["config"]["render"]["dwarfPlanets"] = bool(renderer->getRenderFlags() & Renderer::ShowDwarfPlanets);
+    dump["config"]["render"]["moons"] = bool(renderer->getRenderFlags() & Renderer::ShowMoons);
+    dump["config"]["render"]["minorMoons"] = bool(renderer->getRenderFlags() & Renderer::ShowMinorMoons);
+    dump["config"]["render"]["asteroids"] = bool(renderer->getRenderFlags() & Renderer::ShowAsteroids);
+    dump["config"]["render"]["comets"] = bool(renderer->getRenderFlags() & Renderer::ShowComets);
+    dump["config"]["render"]["spacecrafts"] = bool(renderer->getRenderFlags() & Renderer::ShowSpacecrafts);
+    dump["config"]["render"]["fadingOrbits"] = bool(renderer->getRenderFlags() & Renderer::ShowFadingOrbits);
+    dump["config"]["render"]["planetRings"] = bool(renderer->getRenderFlags() & Renderer::ShowPlanetRings);
+
+    dump["config"]["orbit"] = "{}"_json;
+    dump["config"]["orbit"]["planet"] = bool(renderer->getOrbitMask() & BodyClassification::Planet);
+    dump["config"]["orbit"]["moon"] = bool(renderer->getOrbitMask() & BodyClassification::Moon);
+    dump["config"]["orbit"]["asteroid"] = bool(renderer->getOrbitMask() & BodyClassification::Asteroid);
+    dump["config"]["orbit"]["comet"] = bool(renderer->getOrbitMask() & BodyClassification::Comet);
+    dump["config"]["orbit"]["spacecraft"] = bool(renderer->getOrbitMask() & BodyClassification::Spacecraft);
+    dump["config"]["orbit"]["invisible"] = bool(renderer->getOrbitMask() & BodyClassification::Invisible);
+    dump["config"]["orbit"]["barycenter"] = bool(renderer->getOrbitMask() & BodyClassification::Barycenter);
+    dump["config"]["orbit"]["smallBody"] = bool(renderer->getOrbitMask() & BodyClassification::SmallBody);
+    dump["config"]["orbit"]["dwarfPlanet"] = bool(renderer->getOrbitMask() & BodyClassification::DwarfPlanet);
+    dump["config"]["orbit"]["stellar"] = bool(renderer->getOrbitMask() & BodyClassification::Stellar);
+    dump["config"]["orbit"]["surfaceFeature"] = bool(renderer->getOrbitMask() & BodyClassification::SurfaceFeature);
+    dump["config"]["orbit"]["component"] = bool(renderer->getOrbitMask() & BodyClassification::Component);
+    dump["config"]["orbit"]["minorMoon"] = bool(renderer->getOrbitMask() & BodyClassification::MinorMoon);
+    dump["config"]["orbit"]["diffuse"] = bool(renderer->getOrbitMask() & BodyClassification::Diffuse);
+    dump["config"]["orbit"]["unknown"] = bool(renderer->getOrbitMask() & BodyClassification::Unknown);
+
+    dump["config"]["label"] = "{}"_json;
+    dump["config"]["label"]["star"] = bool(renderer->getLabelMode() & Renderer::StarLabels);
+    dump["config"]["label"]["planet"] = bool(renderer->getLabelMode() & Renderer::PlanetLabels);
+    dump["config"]["label"]["moon"] = bool(renderer->getLabelMode() & Renderer::MoonLabels);
+    dump["config"]["label"]["constellation"] = bool(renderer->getLabelMode() & Renderer::ConstellationLabels);
+    dump["config"]["label"]["galaxy"] = bool(renderer->getLabelMode() & Renderer::GalaxyLabels);
+    dump["config"]["label"]["asteroid"] = bool(renderer->getLabelMode() & Renderer::AsteroidLabels);
+    dump["config"]["label"]["spacecraft"] = bool(renderer->getLabelMode() & Renderer::SpacecraftLabels);
+    dump["config"]["label"]["location"] = bool(renderer->getLabelMode() & Renderer::LocationLabels);
+    dump["config"]["label"]["comet"] = bool(renderer->getLabelMode() & Renderer::CometLabels);
+    dump["config"]["label"]["nebula"] = bool(renderer->getLabelMode() & Renderer::NebulaLabels);
+    dump["config"]["label"]["openCluster"] = bool(renderer->getLabelMode() & Renderer::OpenClusterLabels);
+    dump["config"]["label"]["i18nConstellation"] = bool(renderer->getLabelMode() & Renderer::I18nConstellationLabels);
+    dump["config"]["label"]["dwarfPlanet"] = bool(renderer->getLabelMode() & Renderer::DwarfPlanetLabels);
+    dump["config"]["label"]["minorMoon"] = bool(renderer->getLabelMode() & Renderer::MinorMoonLabels);
+    dump["config"]["label"]["globular"] = bool(renderer->getLabelMode() & Renderer::GlobularLabels);
+
+    return dump.dump();
 }
