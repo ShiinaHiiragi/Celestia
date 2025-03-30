@@ -381,8 +381,8 @@ public:
 
     void loadAsterismsFile(const fs::path &path);
 
-    bool visible(std::string, SelectionType);
-    std::string getStatus();
+    std::string visible(std::string, SelectionType);
+    std::string getStatus(std::string);
 
 #ifdef USE_MINIAUDIO
     bool isPlayingAudio(int channel) const;

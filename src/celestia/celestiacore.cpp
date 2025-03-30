@@ -3373,7 +3373,7 @@ void printVector3f(std::string name, Eigen::Vector3f vec) {
     std::cout << name << ": (" << vec(0) << ", " << vec(1) << ", " << vec(2) << ")\n";
 }
 
-bool CelestiaCore::visible(std::string name, SelectionType type)
+std::string CelestiaCore::visible(std::string name, SelectionType type)
 {
     Star* star;
     Body* body;
@@ -3387,7 +3387,7 @@ bool CelestiaCore::visible(std::string name, SelectionType type)
         AstroCatalog::IndexNumber solIndex = starDB->findCatalogNumberByName(name, false);
         star = universe->getStarCatalog()->find(solIndex);
         if (star == nullptr) {
-            return false;
+            return "null";
         }
         coord = UniversalCoord(star->getPosition().cast<double>());
         break;
@@ -3399,7 +3399,7 @@ bool CelestiaCore::visible(std::string name, SelectionType type)
         Star* sol = universe->getStarCatalog()->find(solIndex);
         body = universe->getSolarSystem(sol)->getPlanets()->find(name);
         if (body == nullptr) {
-            return false;
+            return "null";
         }
         coord = body->getPosition(sim->getTime());
         break;
@@ -3408,14 +3408,14 @@ bool CelestiaCore::visible(std::string name, SelectionType type)
     case SelectionType::DeepSky: {
         dso = universe->getDSOCatalog()->find(name, false);
         if (dso == nullptr) {
-            return false;
+            return "null";
         }
         coord = UniversalCoord(dso->getPosition());
         break;
     }
 
     default: {
-        return false;
+        return "null";
     }
     }
 
@@ -3444,7 +3444,7 @@ bool CelestiaCore::visible(std::string name, SelectionType type)
     }
 
     default: {
-        return false;
+        return "null";
     }
     }
 
@@ -3464,10 +3464,13 @@ bool CelestiaCore::visible(std::string name, SelectionType type)
         lastTop = pickRayTop(0), lastBot = pickRayBot(0);
     }
 
-    return inSelect && inScreen;
+    json result = "{}"_json;
+    result["position"] = {double(coord.x), double(coord.y), double(coord.z)};
+    result["visible"] = bool(inSelect && inScreen);
+    return result.dump();
 }
 
-std::string CelestiaCore::getStatus()
+std::string CelestiaCore::getStatus(std::string inputs)
 {
     json dump = "{}"_json;
 
@@ -3477,9 +3480,12 @@ std::string CelestiaCore::getStatus()
     dump["time"]["pause"] = sim->getPauseState();
 
     dump["entity"] = "{}"_json;
-    dump["entity"]["sol"] = visible("Sol", SelectionType::Star);
-    dump["entity"]["earth"] = visible("Earth", SelectionType::Body);
-    dump["entity"]["lmc"] = visible("LMC", SelectionType::DeepSky);
+    json entities = json::parse(inputs);
+    for (json entity: entities) {
+        std::string name = entity["name"];
+        SelectionType type = static_cast<SelectionType>(int(entity["type"]));
+        dump["entity"][name] = json::parse(visible(name, type));
+    }
 
     dump["config"] = "{}"_json;
     dump["config"]["render"] = "{}"_json;
@@ -3553,5 +3559,7 @@ std::string CelestiaCore::getStatus()
     dump["config"]["label"]["minorMoon"] = bool(renderer->getLabelMode() & Renderer::MinorMoonLabels);
     dump["config"]["label"]["globular"] = bool(renderer->getLabelMode() & Renderer::GlobularLabels);
 
+    dump["config"]["resolution"] = renderer->getResolution();
+    dump["config"]["starStyle"] = renderer->getStarStyle();
     return dump.dump();
 }
