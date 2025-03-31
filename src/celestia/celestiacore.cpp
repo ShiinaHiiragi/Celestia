@@ -3387,7 +3387,7 @@ std::string CelestiaCore::visible(std::string name, SelectionType type)
         AstroCatalog::IndexNumber solIndex = starDB->findCatalogNumberByName(name, false);
         star = universe->getStarCatalog()->find(solIndex);
         if (star == nullptr) {
-            return "null";
+            return "null"_json;
         }
         coord = UniversalCoord(star->getPosition().cast<double>());
         break;
@@ -3399,7 +3399,7 @@ std::string CelestiaCore::visible(std::string name, SelectionType type)
         Star* sol = universe->getStarCatalog()->find(solIndex);
         body = universe->getSolarSystem(sol)->getPlanets()->find(name);
         if (body == nullptr) {
-            return "null";
+            return "null"_json;
         }
         coord = body->getPosition(sim->getTime());
         break;
@@ -3408,14 +3408,14 @@ std::string CelestiaCore::visible(std::string name, SelectionType type)
     case SelectionType::DeepSky: {
         dso = universe->getDSOCatalog()->find(name, false);
         if (dso == nullptr) {
-            return "null";
+            return "null"_json;
         }
         coord = UniversalCoord(dso->getPosition());
         break;
     }
 
     default: {
-        return "null";
+        return "null"_json;
     }
     }
 
@@ -3444,7 +3444,7 @@ std::string CelestiaCore::visible(std::string name, SelectionType type)
     }
 
     default: {
-        return "null";
+        return "null"_json;
     }
     }
 
@@ -3468,6 +3468,23 @@ std::string CelestiaCore::visible(std::string name, SelectionType type)
     result["position"] = {double(coord.x), double(coord.y), double(coord.z)};
     result["distance"] = coord.offsetFromKm(observer.getPosition()).norm();
     result["visible"] = bool(inSelect && inScreen);
+
+    if (type == SelectionType::Body) {
+        result["hidden"] = bool(!body->isVisible());
+        result["mark"] = "{}"_json;
+
+        Selection temp_sel(body);
+        result["mark"]["bodyAxes"] = referenceMarkEnabled("body axes", temp_sel);
+        result["mark"]["frameAxes"] = referenceMarkEnabled("frame axes", temp_sel);
+        result["mark"]["sunDirection"] = referenceMarkEnabled("sun direction", temp_sel);
+        result["mark"]["velocityVector"] = referenceMarkEnabled("velocity vector", temp_sel);
+        result["mark"]["spinVector"] = referenceMarkEnabled("spin vector", temp_sel);
+        result["mark"]["planetographicGrid"] = referenceMarkEnabled("planetographic grid", temp_sel);
+        result["mark"]["terminator"] = referenceMarkEnabled("terminator", temp_sel);
+    } else {
+        result["hidden"] = false;
+        result["mark"] = "null"_json;
+    }
     return result.dump();
 }
 
