@@ -70,7 +70,7 @@ HttpResponse status_dump(const HttpRequest &request) {
     try {
         HttpResponse response(HttpStatusCode::Ok);
         response.SetHeader("Content-Type", "application/json");
-        response.SetContent(appCore->getStatus("[{name: \"Sol\", type: 1}]"));
+        response.SetContent(appCore->getStatus("[{\"name\": \"Sol\", \"type\": 1}]"));
         return response;
     } catch (...) {
         HttpResponse response(HttpStatusCode::BadRequest);
