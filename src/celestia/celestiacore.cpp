@@ -3466,6 +3466,7 @@ std::string CelestiaCore::visible(std::string name, SelectionType type)
 
     json result = "{}"_json;
     result["position"] = {double(coord.x), double(coord.y), double(coord.z)};
+    result["distance"] = coord.offsetFromKm(observer.getPosition()).norm();
     result["visible"] = bool(inSelect && inScreen);
     return result.dump();
 }
@@ -3480,6 +3481,14 @@ std::string CelestiaCore::getStatus(std::string inputs)
     dump["time"]["pause"] = sim->getPauseState();
 
     dump["entity"] = "{}"_json;
+    dump["entity"]["observer"] = "{}"_json;
+    dump["entity"]["observer"]["position"] = {
+        double(sim->getObserver().getPosition().x),
+        double(sim->getObserver().getPosition().y),
+        double(sim->getObserver().getPosition().z)
+    };
+    dump["entity"]["observer"]["distance"] = 0.0f;
+    dump["entity"]["observer"]["visible"] = false;
     json entities = json::parse(inputs);
     for (json entity: entities) {
         std::string name = entity["name"];
@@ -3561,5 +3570,6 @@ std::string CelestiaCore::getStatus(std::string inputs)
 
     dump["config"]["resolution"] = renderer->getResolution();
     dump["config"]["starStyle"] = renderer->getStarStyle();
+    dump["config"]["autoMagnitude"] = renderer->getFaintestAM45deg();
     return dump.dump();
 }
