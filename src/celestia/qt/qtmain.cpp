@@ -65,12 +65,12 @@ HttpResponse status_version(const HttpRequest &_) {
 
 HttpResponse status_dump(const HttpRequest &request) {
     std::string query = request.content();
-    std::cout << "GET /dump with " << query << "\n";
+    std::cout << "POST /dump with " << query << "\n";
 
     try {
         HttpResponse response(HttpStatusCode::Ok);
         response.SetHeader("Content-Type", "application/json");
-        response.SetContent(appCore->getStatus("[{\"name\": \"Sol\", \"type\": 1}, {\"name\": \"Earth\", \"type\": 2}, {\"name\": \"LMC\", \"type\": 3}]"));
+        response.SetContent(appCore->getStatus(query));
         return response;
     } catch (...) {
         HttpResponse response(HttpStatusCode::BadRequest);
@@ -195,7 +195,7 @@ int main(int argc, char *argv[])
     server.RegisterHttpRequestHandler("/version", HttpMethod::GET, status_version);
 
     server.RegisterHttpRequestHandler("/dump", HttpMethod::HEAD, status_dump);
-    server.RegisterHttpRequestHandler("/dump", HttpMethod::GET, status_dump);
+    server.RegisterHttpRequestHandler("/dump", HttpMethod::POST, status_dump);
 
     appCore = window.getAppCore();
     server.Start();
