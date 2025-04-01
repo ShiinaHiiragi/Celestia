@@ -3379,6 +3379,7 @@ std::string CelestiaCore::visible(std::string name, SelectionType type)
     Body* body;
     DeepSkyObject* dso;
     UniversalCoord coord;
+    float radius;
     const Observer& observer = sim->getObserver();
 
     switch (type) {
@@ -3390,6 +3391,7 @@ std::string CelestiaCore::visible(std::string name, SelectionType type)
             return "null"_json;
         }
         coord = UniversalCoord(star->getPosition().cast<double>());
+        radius = star->getRadius();
         break;
     }
 
@@ -3402,6 +3404,7 @@ std::string CelestiaCore::visible(std::string name, SelectionType type)
             return "null"_json;
         }
         coord = body->getPosition(sim->getTime());
+        radius = body->getRadius();
         break;
     }
 
@@ -3411,6 +3414,7 @@ std::string CelestiaCore::visible(std::string name, SelectionType type)
             return "null"_json;
         }
         coord = UniversalCoord(dso->getPosition());
+        radius = dso->getRadius();
         break;
     }
 
@@ -3466,7 +3470,9 @@ std::string CelestiaCore::visible(std::string name, SelectionType type)
 
     json result = "{}"_json;
     result["position"] = {double(coord.x), double(coord.y), double(coord.z)};
-    result["distance"] = coord.offsetFromKm(observer.getPosition()).norm();
+    result["object"] = {object(0), object(1), object(2)};
+    result["distance"] = object.norm() - radius;
+    result["radius"] = radius;
     result["visible"] = bool(inSelect && inScreen);
 
     if (type == SelectionType::Body) {
