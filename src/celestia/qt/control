@@ -1,5 +1,5 @@
 Package: celestia-kai
-Version: 0.1
+Version: 1.0
 Maintainer: Ichinoe
 Architecture: amd64
 Description: Modified Celestia which supports a local server.
