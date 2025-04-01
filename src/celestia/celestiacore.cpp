@@ -3378,7 +3378,8 @@ std::string CelestiaCore::visible(std::string name, SelectionType type)
     Star* star;
     Body* body;
     DeepSkyObject* dso;
-    UniversalCoord coord;
+
+    Selection sel;
     float radius;
     const Observer& observer = sim->getObserver();
 
@@ -3390,7 +3391,7 @@ std::string CelestiaCore::visible(std::string name, SelectionType type)
         if (star == nullptr) {
             return "null"_json;
         }
-        coord = UniversalCoord(star->getPosition().cast<double>());
+        sel = Selection(star);
         radius = star->getRadius();
         break;
     }
@@ -3399,11 +3400,11 @@ std::string CelestiaCore::visible(std::string name, SelectionType type)
         const StarNameDatabase * starDB = universe->getStarCatalog()->getNameDatabase();
         AstroCatalog::IndexNumber solIndex = starDB->findCatalogNumberByName("Sol", false);
         Star* sol = universe->getStarCatalog()->find(solIndex);
-        body = universe->getSolarSystem(sol)->getPlanets()->find(name);
+        body = universe->getSolarSystem(sol)->getPlanets()->find(name, true);
         if (body == nullptr) {
-            return "null"_json;
+            return nullptr;
         }
-        coord = body->getPosition(sim->getTime());
+        sel = Selection(body);
         radius = body->getRadius();
         break;
     }
@@ -3411,48 +3412,50 @@ std::string CelestiaCore::visible(std::string name, SelectionType type)
     case SelectionType::DeepSky: {
         dso = universe->getDSOCatalog()->find(name, false);
         if (dso == nullptr) {
-            return "null"_json;
+            return nullptr;
         }
-        coord = UniversalCoord(dso->getPosition());
+        sel = Selection(dso);
         radius = dso->getRadius();
         break;
     }
 
     default: {
-        return "null"_json;
+        return nullptr;
     }
     }
 
-    Eigen::Vector3f object = coord.offsetFromKm(observer.getPosition()).cast<float>();
+    UniversalCoord coord = sel.getPosition(sim->getTime());
+    Eigen::Vector3d object_raw = coord.offsetFromKm(observer.getPosition());
+    Eigen::Vector3f object = object_raw.normalized().cast<float>();
     Eigen::Vector3f subject = (sim->getActiveObserver()->getOrientationf() * object).normalized();
 
     bool inSelect = false;
     int x_max = metrics.width, y_max = metrics.height;
     float obsPickTolerance = sim->getActiveObserver()->getFOV() / static_cast<float>(y_max) * this->pickTolerance;
-    Selection sel = sim->pickObject(subject, renderer->getRenderFlags(), obsPickTolerance);
+    Selection simSel = sim->pickObject(subject, renderer->getRenderFlags(), obsPickTolerance);
 
     switch (type) {
     case SelectionType::Star: {
-        inSelect = (sel.star() == star);
+        inSelect = (simSel.star() == star);
         break;
     }
 
     case SelectionType::Body: {
-        inSelect = (sel.body() == body);
+        inSelect = (simSel.body() == body);
         break;
     }
 
     case SelectionType::DeepSky: {
-        inSelect = (sel.deepsky() == dso);
+        inSelect = (simSel.deepsky() == dso);
         break;
     }
 
     default: {
-        return "null"_json;
+        return nullptr;
     }
     }
 
-    bool inScreen = false;
+    bool inScreen = false;  
     float lastTop = 0.0f, lastBot = 0.0f;
     for (int x = 0; x < x_max; x += 1) {
         Vector3f pickRayTop = getPickRay(x, 0, viewManager->activeView());
@@ -3470,26 +3473,24 @@ std::string CelestiaCore::visible(std::string name, SelectionType type)
 
     json result = "{}"_json;
     result["position"] = {double(coord.x), double(coord.y), double(coord.z)};
-    result["object"] = {object(0), object(1), object(2)};
-    result["distance"] = object.norm() - radius;
+    result["object"] = {object_raw(0), object_raw(1), object_raw(2)};
+    result["distance"] = object_raw.norm() - radius;
     result["radius"] = radius;
     result["visible"] = bool(inSelect && inScreen);
 
     if (type == SelectionType::Body) {
         result["hidden"] = bool(!body->isVisible());
         result["mark"] = "{}"_json;
-
-        Selection temp_sel(body);
-        result["mark"]["bodyAxes"] = referenceMarkEnabled("body axes", temp_sel);
-        result["mark"]["frameAxes"] = referenceMarkEnabled("frame axes", temp_sel);
-        result["mark"]["sunDirection"] = referenceMarkEnabled("sun direction", temp_sel);
-        result["mark"]["velocityVector"] = referenceMarkEnabled("velocity vector", temp_sel);
-        result["mark"]["spinVector"] = referenceMarkEnabled("spin vector", temp_sel);
-        result["mark"]["planetographicGrid"] = referenceMarkEnabled("planetographic grid", temp_sel);
-        result["mark"]["terminator"] = referenceMarkEnabled("terminator", temp_sel);
+        result["mark"]["bodyAxes"] = referenceMarkEnabled("body axes", sel);
+        result["mark"]["frameAxes"] = referenceMarkEnabled("frame axes", sel);
+        result["mark"]["sunDirection"] = referenceMarkEnabled("sun direction", sel);
+        result["mark"]["velocityVector"] = referenceMarkEnabled("velocity vector", sel);
+        result["mark"]["spinVector"] = referenceMarkEnabled("spin vector", sel);
+        result["mark"]["planetographicGrid"] = referenceMarkEnabled("planetographic grid", sel);
+        result["mark"]["terminator"] = referenceMarkEnabled("terminator", sel);
     } else {
         result["hidden"] = false;
-        result["mark"] = "null"_json;
+        result["mark"] = nullptr;
     }
     return result.dump();
 }
