@@ -21,7 +21,7 @@
 namespace simple_http_server {
 // Maximum size of an HTTP message is limited by how much bytes
 // we can read or send via socket each time
-constexpr size_t kMaxBufferSize = 4096;
+constexpr size_t kMaxBufferSize = 8192;
 
 struct EventData {
     EventData()
